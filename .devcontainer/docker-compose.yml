@@ -33,49 +33,6 @@ services:
     networks:
       - traefik
 
-  queue-worker:
-    build:
-      context: ..
-      dockerfile: .devcontainer/Dockerfile
-    volumes:
-      - ${LOCAL_WORKSPACE_FOLDER:-..}:/workspace:cached
-    command: php /workspace/artisan queue:work --tries=3
-    depends_on:
-      - redis
-      - mysql
-    networks:
-      - traefik
-
-  scheduler:
-    build:
-      context: ..
-      dockerfile: .devcontainer/Dockerfile
-    volumes:
-      - ${LOCAL_WORKSPACE_FOLDER:-..}:/workspace:cached
-    command: php /workspace/artisan schedule:work
-    depends_on:
-      - redis
-      - mysql
-    networks:
-      - traefik
-
-  horizon:
-    build:
-      context: ..
-      dockerfile: .devcontainer/Dockerfile
-    volumes:
-      - ${LOCAL_WORKSPACE_FOLDER:-..}:/workspace:cached
-    command: php /workspace/artisan horizon
-    depends_on:
-      - redis
-      - mysql
-    labels:
-      - "traefik.enable=true"
-      - "traefik.http.routers.horizon.rule=Host(`horizon.localhost`)"
-      - "traefik.http.services.horizon.loadbalancer.server.port=9001"
-    networks:
-      - traefik
-
   mysql:
     image: mysql:8.0
     restart: always
@@ -117,7 +74,8 @@ services:
     image: axllent/mailpit
     restart: always
     ports:
-      - "1025:1025" # SMTP port
+      - "1025:1025" # SMTP
+      - "8025:8025" # UI (also routed via Traefik)
     labels:
       - "traefik.enable=true"
       - "traefik.http.routers.mailpit.rule=Host(`mail.localhost`)"
@@ -125,46 +83,8 @@ services:
     networks:
       - traefik
 
-  keycloak:
-    image: quay.io/keycloak/keycloak:24.0
-    command: start-dev
-    environment:
-      KEYCLOAK_ADMIN: admin
-      KEYCLOAK_ADMIN_PASSWORD: admin
-    labels:
-      - "traefik.enable=true"
-      - "traefik.http.routers.keycloak.rule=Host(`sso.localhost`)"
-      - "traefik.http.services.keycloak.loadbalancer.server.port=8080"
-    networks:
-      - traefik
-
-  minio:
-    image: minio/minio
-    command: server /data --console-address ":9001"
-    environment:
-      MINIO_ROOT_USER: root
-      MINIO_ROOT_PASSWORD: rootpassword
-    volumes:
-      - minio-data:/data
-    labels:
-      - "traefik.enable=true"
-      - "traefik.http.routers.minio.rule=Host(`storage.localhost`)"
-      - "traefik.http.services.minio.loadbalancer.server.port=9001"
-    networks:
-      - traefik
-
-  meilisearch:
-    image: getmeili/meilisearch:latest
-    labels:
-      - "traefik.enable=true"
-      - "traefik.http.routers.meili.rule=Host(`search.localhost`)"
-      - "traefik.http.services.meili.loadbalancer.server.port=7700"
-    networks:
-      - traefik
-
 volumes:
   mysql-data:
-  minio-data:
 
 networks:
   traefik:
