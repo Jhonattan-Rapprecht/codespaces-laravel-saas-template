@@ -1,6 +1,6 @@
 FROM mcr.microsoft.com/devcontainers/php:8.4
 
-# Install system dependencies
+# Install system dependencies + official MySQL client
 RUN apt-get update && apt-get install -y \
     git \
     unzip \
@@ -8,10 +8,8 @@ RUN apt-get update && apt-get install -y \
     libpng-dev \
     libonig-dev \
     libxml2-dev \
+    mysql-client \
     && docker-php-ext-install pdo_mysql zip gd
-
-RUN apt-get update && apt-get install -y default-mysql-client
-
 
 # Install Composer
 COPY --from=composer:2 /usr/bin/composer /usr/bin/composer
