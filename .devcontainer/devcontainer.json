@@ -4,61 +4,34 @@
   "service": "app",
   "workspaceFolder": "/workspace",
 
-  "runServices": [
-    "traefik",
-    "app",
-    "mysql",
-    "redis",
-    "mailpit",
-    "phpmyadmin"
-  ],
 
-  "postCreateCommand": [
-    "cd /workspace && cp -n .env.example .env || true",
-    "cd /workspace && composer install",
-    "cd /workspace && npm install",
-    "cd /workspace && php artisan key:generate",
-    "cd /workspace && php artisan migrate --force"
-  ],
+"preCreateCommand": [
+  "cd /workspace && [ ! -f .env ] && cp .env.example .env || true",
+  "cd /workspace && grep -q 'APP_KEY=' .env || php artisan key:generate"
+],
 
-  "postStartCommand": [
-    "cd /workspace && php artisan config:clear",
-    "cd /workspace && php artisan route:clear",
-    "cd /workspace && php artisan view:clear",
-    // Start Laravel dev server for Traefik to route to
-    "cd /workspace && php artisan serve --host=0.0.0.0 --port=8000 &"
-  ],
+"postCreateCommand": [
+  "cd /workspace && composer install",
+  "cd /workspace && npm install",
+  "cd /workspace && php artisan migrate --force"
+],
 
+"postStartCommand": [
+  "cd /workspace && php artisan config:clear",
+  "cd /workspace && php artisan route:clear",
+  "cd /workspace && php artisan view:clear",
+  "cd /workspace && php artisan serve --host=0.0.0.0 --port=8000 &"
+],
+
+
+  // Forward important ports
   "forwardPorts": [
-    80,    // Traefik (app, pma, mailpit)
-    8082,  // Traefik dashboard
-    3306,  // MySQL
-    6379,  // Redis
-    8025,  // Mailpit UI (also via Traefik)
-    1025   // Mailpit SMTP
+    8000, // Laravel
+    3306, // MySQL
+    6379, // Redis
+    8080, // phpMyAdmin
+    8025  // Mailpit
   ],
-
-  "containerEnv": {
-    "APP_ENV": "local",
-    "APP_DEBUG": "true",
-
-    "DB_CONNECTION": "mysql",
-    "DB_HOST": "mysql",
-    "DB_PORT": "3306",
-    "DB_DATABASE": "laravel",
-    "DB_USERNAME": "laravel",
-    "DB_PASSWORD": "laravel",
-
-    "REDIS_HOST": "redis",
-    "REDIS_PORT": "6379",
-
-    "MAIL_MAILER": "smtp",
-    "MAIL_HOST": "mailpit",
-    "MAIL_PORT": "1025",
-    "MAIL_ENCRYPTION": "",
-    "MAIL_FROM_ADDRESS": "no-reply@local.test",
-    "MAIL_FROM_NAME": "Laravel SaaS Dev"
-  },
 
   "customizations": {
     "vscode": {
@@ -66,21 +39,8 @@
         "bmewburn.vscode-intelephense-client",
         "ms-azuretools.vscode-docker",
         "xdebug.php-debug",
-        "onecentlin.laravel-blade",
-        "esbenp.prettier-vscode",
-        "dbaeumer.vscode-eslint",
-        "mhutchie.git-graph",
-        "mehedidracula.php-namespace-resolver"
-      ],
-      "settings": {
-        "editor.formatOnSave": true,
-        "php.validate.executablePath": "/usr/local/bin/php",
-        "intelephense.environment.phpVersion": "8.4",
-        "files.exclude": {
-          "**/vendor": true,
-          "**/node_modules": true
-        }
-      }
+        "onecentlin.laravel-blade"
+      ]
     }
   }
 }

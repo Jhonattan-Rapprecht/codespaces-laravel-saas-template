@@ -1,37 +1,19 @@
 version: "3.9"
 
 services:
-  traefik:
-    image: traefik:v3.0
-    command:
-      - "--api.dashboard=true"
-      - "--providers.docker=true"
-      - "--entrypoints.web.address=:80"
-    ports:
-      - "80:80"
-      - "8082:8080" # Traefik dashboard
-    volumes:
-      - /var/run/docker.sock:/var/run/docker.sock
-    networks:
-      - traefik
-
   app:
     build:
-      context: ..
-      dockerfile: .devcontainer/Dockerfile
+      context: .
+      dockerfile: Dockerfile
     volumes:
-      - ${LOCAL_WORKSPACE_FOLDER:-..}:/workspace:cached
+      - ..:/workspace:cached
     command: sleep infinity
+    ports:
+      - "8000:8000"
     depends_on:
       - mysql
       - redis
       - mailpit
-    labels:
-      - "traefik.enable=true"
-      - "traefik.http.routers.app.rule=Host(`app.localhost`)"
-      - "traefik.http.services.app.loadbalancer.server.port=8000"
-    networks:
-      - traefik
 
   mysql:
     image: mysql:8.0
@@ -45,47 +27,28 @@ services:
       - "3306:3306"
     volumes:
       - mysql-data:/var/lib/mysql
-    networks:
-      - traefik
 
   phpmyadmin:
     image: phpmyadmin/phpmyadmin
     restart: always
+    ports:
+      - "8080:80"
     environment:
       PMA_HOST: mysql
       PMA_USER: root
       PMA_PASSWORD: root
-    labels:
-      - "traefik.enable=true"
-      - "traefik.http.routers.phpmyadmin.rule=Host(`pma.localhost`)"
-      - "traefik.http.services.phpmyadmin.loadbalancer.server.port=80"
-    networks:
-      - traefik
 
   redis:
     image: redis:alpine
     restart: always
     ports:
       - "6379:6379"
-    networks:
-      - traefik
 
   mailpit:
     image: axllent/mailpit
     restart: always
     ports:
-      - "1025:1025" # SMTP
-      - "8025:8025" # UI (also routed via Traefik)
-    labels:
-      - "traefik.enable=true"
-      - "traefik.http.routers.mailpit.rule=Host(`mail.localhost`)"
-      - "traefik.http.services.mailpit.loadbalancer.server.port=8025"
-    networks:
-      - traefik
+      - "8025:8025"
 
 volumes:
   mysql-data:
-
-networks:
-  traefik:
-    driver: bridge
