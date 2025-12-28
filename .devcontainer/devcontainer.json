@@ -10,13 +10,7 @@
     "mysql",
     "redis",
     "mailpit",
-    "phpmyadmin",
-    "queue-worker",
-    "scheduler",
-    "horizon",
-    "keycloak",
-    "minio",
-    "meilisearch"
+    "phpmyadmin"
   ],
 
   "postCreateCommand": [
@@ -30,18 +24,18 @@
   "postStartCommand": [
     "cd /workspace && php artisan config:clear",
     "cd /workspace && php artisan route:clear",
-    "cd /workspace && php artisan view:clear"
+    "cd /workspace && php artisan view:clear",
+    // Start Laravel dev server for Traefik to route to
+    "cd /workspace && php artisan serve --host=0.0.0.0 --port=8000 &"
   ],
 
   "forwardPorts": [
-    80,
-    8082,
-    3306,
-    6379,
-    8025,
-    1025,
-    7700,
-    9001
+    80,    // Traefik (app, pma, mailpit)
+    8082,  // Traefik dashboard
+    3306,  // MySQL
+    6379,  // Redis
+    8025,  // Mailpit UI (also via Traefik)
+    1025   // Mailpit SMTP
   ],
 
   "containerEnv": {
@@ -63,23 +57,7 @@
     "MAIL_PORT": "1025",
     "MAIL_ENCRYPTION": "",
     "MAIL_FROM_ADDRESS": "no-reply@local.test",
-    "MAIL_FROM_NAME": "Laravel SaaS Dev",
-
-    "FILESYSTEM_DISK": "s3",
-    "AWS_ACCESS_KEY_ID": "root",
-    "AWS_SECRET_ACCESS_KEY": "rootpassword",
-    "AWS_DEFAULT_REGION": "us-east-1",
-    "AWS_BUCKET": "local-bucket",
-    "AWS_ENDPOINT": "http://minio:9000",
-
-    "SSO_ENABLED": "true",
-    "SSO_DRIVER": "oidc",
-    "SSO_ISSUER_URL": "http://keycloak:8080/realms/saas",
-    "SSO_CLIENT_ID": "laravel-saas",
-    "SSO_CLIENT_SECRET": "change-this",
-    "SSO_REDIRECT_URI": "http://app.localhost/auth/callback",
-    "SSO_LOGOUT_REDIRECT_URI": "http://app.localhost/",
-    "SSO_SCOPES": "openid profile email"
+    "MAIL_FROM_NAME": "Laravel SaaS Dev"
   },
 
   "customizations": {
