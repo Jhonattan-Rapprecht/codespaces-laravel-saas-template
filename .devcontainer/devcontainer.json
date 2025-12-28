@@ -1,23 +1,80 @@
 {
   "name": "Laravel SaaS Dev",
   "dockerComposeFile": "docker-compose.yml",
-  "service": "app",
+  "service": "app",                  // The main Laravel/PHP container
   "workspaceFolder": "/workspace",
 
-  // Runs after the container is created
-  "postCreateCommand": "composer install",
-
-  // Runs every time the container starts
-  "postStartCommand": "php artisan serve --host=0.0.0.0 --port=8000",
-
-  // Forward important ports
-  "forwardPorts": [
-    8000, // Laravel
-    3306, // MySQL
-    6379, // Redis
-    8080, // phpMyAdmin
-    8025  // Mailpit
+  // Start all core services when the devcontainer comes up
+  "runServices": [
+    "app",
+    "mysql",
+    "redis",
+    "mailpit",
+    "phpmyadmin",
+    "queue-worker",
+    "scheduler",
+    "keycloak"       // or "authentik" / other SSO IdP service
   ],
+
+  // Install app dependencies on first create
+  "postCreateCommand": [
+    "composer install",
+    "npm install",
+    "cp -n .env.example .env || true",
+    "php artisan key:generate",
+    "php artisan migrate --force"
+  ],
+
+  // Keep postStart light – long‑running daemons belong in their own services
+  "postStartCommand": [
+    "php artisan config:clear",
+    "php artisan route:clear",
+    "php artisan view:clear"
+  ],
+
+  // Forward all important ports for a big SaaS toolkit
+  "forwardPorts": [
+    8000,  // Laravel HTTP
+    3306,  // MySQL
+    6379,  // Redis
+    8080,  // phpMyAdmin
+    8025,  // Mailpit UI
+    1025,  // Mailpit SMTP
+    8081   // Keycloak / SSO IdP UI (example)
+  ],
+
+  // Container‑level envs – keep them in sync with your .env template
+  "containerEnv": {
+    "APP_ENV": "local",
+    "APP_DEBUG": "true",
+
+    "DB_CONNECTION": "mysql",
+    "DB_HOST": "mysql",
+    "DB_PORT": "3306",
+    "DB_DATABASE": "laravel",
+    "DB_USERNAME": "root",
+    "DB_PASSWORD": "root",
+
+    "REDIS_HOST": "redis",
+    "REDIS_PORT": "6379",
+
+    "MAIL_MAILER": "smtp",
+    "MAIL_HOST": "mailpit",
+    "MAIL_PORT": "1025",
+    "MAIL_ENCRYPTION": null,
+    "MAIL_FROM_ADDRESS": "no-reply@local.test",
+    "MAIL_FROM_NAME": "Laravel SaaS Dev",
+
+    // SSO / OIDC (example – wired to Keycloak or another IdP service)
+    "SSO_ENABLED": "true",
+    "SSO_DRIVER": "oidc",               // your own abstraction
+    "SSO_ISSUER_URL": "http://keycloak:8080/realms/saas",
+    "SSO_CLIENT_ID": "laravel-saas",
+    "SSO_CLIENT_SECRET": "CHANGEME_IN_REAL_IDP",
+    "SSO_REDIRECT_URI": "http://localhost:8000/auth/callback",
+    "SSO_LOGOUT_REDIRECT_URI": "http://localhost:8000/",
+    "SSO_SCOPES": "openid profile email"
+  },
 
   "customizations": {
     "vscode": {
@@ -25,9 +82,21 @@
         "bmewburn.vscode-intelephense-client",
         "ms-azuretools.vscode-docker",
         "xdebug.php-debug",
-        "onecentlin.laravel-blade"
-      ]
+        "onecentlin.laravel-blade",
+        "esbenp.prettier-vscode",
+        "dbaeumer.vscode-eslint",
+        "mhutchie.git-graph",
+        "mehedidracula.php-namespace-resolver"
+      ],
+      "settings": {
+        "editor.formatOnSave": true,
+        "php.validate.executablePath": "/usr/local/bin/php",
+        "intelephense.environment.phpVersion": "8.4",
+        "files.exclude": {
+          "**/vendor": true,
+          "**/node_modules": true
+        }
+      }
     }
   }
 }
-
