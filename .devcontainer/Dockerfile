@@ -1,4 +1,4 @@
-FROM mcr.microsoft.com/devcontainers/php:8.3
+FROM mcr.microsoft.com/devcontainers/php:8.4
 
 # Install system dependencies
 RUN apt-get update && apt-get install -y \
