@@ -1,10 +1,9 @@
 {
   "name": "Laravel SaaS Dev",
   "dockerComposeFile": "docker-compose.yml",
-  "service": "app",                  // The main Laravel/PHP container
+  "service": "app",
   "workspaceFolder": "/workspace",
 
-  // Start all core services when the devcontainer comes up
   "runServices": [
     "app",
     "mysql",
@@ -13,37 +12,38 @@
     "phpmyadmin",
     "queue-worker",
     "scheduler",
-    "keycloak"       // or "authentik" / other SSO IdP service
+    "horizon",
+    "keycloak",
+    "minio",
+    "meilisearch",
+    "traefik"
   ],
 
-  // Install app dependencies on first create
   "postCreateCommand": [
-    "composer install",
-    "npm install",
-    "cp -n .env.example .env || true",
-    "php artisan key:generate",
-    "php artisan migrate --force"
+    "cd /workspace && cp -n .env.example .env || true",
+    "cd /workspace && composer install",
+    "cd /workspace && npm install",
+    "cd /workspace && php artisan key:generate",
+    "cd /workspace && php artisan migrate --force"
   ],
 
-  // Keep postStart light – long‑running daemons belong in their own services
   "postStartCommand": [
-    "php artisan config:clear",
-    "php artisan route:clear",
-    "php artisan view:clear"
+    "cd /workspace && php artisan config:clear",
+    "cd /workspace && php artisan route:clear",
+    "cd /workspace && php artisan view:clear"
   ],
 
-  // Forward all important ports for a big SaaS toolkit
   "forwardPorts": [
-    8000,  // Laravel HTTP
+    80,    // Traefik -> app, pma, mailpit, horizon, keycloak, etc
+    8082,  // Traefik dashboard
     3306,  // MySQL
     6379,  // Redis
-    8080,  // phpMyAdmin
     8025,  // Mailpit UI
     1025,  // Mailpit SMTP
-    8081   // Keycloak / SSO IdP UI (example)
+    7700,  // Meilisearch
+    9001   // MinIO console (via Traefik or direct)
   ],
 
-  // Container‑level envs – keep them in sync with your .env template
   "containerEnv": {
     "APP_ENV": "local",
     "APP_DEBUG": "true",
@@ -52,8 +52,8 @@
     "DB_HOST": "mysql",
     "DB_PORT": "3306",
     "DB_DATABASE": "laravel",
-    "DB_USERNAME": "root",
-    "DB_PASSWORD": "root",
+    "DB_USERNAME": "laravel",
+    "DB_PASSWORD": "laravel",
 
     "REDIS_HOST": "redis",
     "REDIS_PORT": "6379",
@@ -61,18 +61,24 @@
     "MAIL_MAILER": "smtp",
     "MAIL_HOST": "mailpit",
     "MAIL_PORT": "1025",
-    "MAIL_ENCRYPTION": null,
+    "MAIL_ENCRYPTION": "",
     "MAIL_FROM_ADDRESS": "no-reply@local.test",
     "MAIL_FROM_NAME": "Laravel SaaS Dev",
 
-    // SSO / OIDC (example – wired to Keycloak or another IdP service)
+    "FILESYSTEM_DISK": "s3",
+    "AWS_ACCESS_KEY_ID": "root",
+    "AWS_SECRET_ACCESS_KEY": "rootpassword",
+    "AWS_DEFAULT_REGION": "us-east-1",
+    "AWS_BUCKET": "local-bucket",
+    "AWS_ENDPOINT": "http://minio:9000",
+
     "SSO_ENABLED": "true",
-    "SSO_DRIVER": "oidc",               // your own abstraction
+    "SSO_DRIVER": "oidc",
     "SSO_ISSUER_URL": "http://keycloak:8080/realms/saas",
     "SSO_CLIENT_ID": "laravel-saas",
-    "SSO_CLIENT_SECRET": "CHANGEME_IN_REAL_IDP",
-    "SSO_REDIRECT_URI": "http://localhost:8000/auth/callback",
-    "SSO_LOGOUT_REDIRECT_URI": "http://localhost:8000/",
+    "SSO_CLIENT_SECRET": "change-this-in-real-idp",
+    "SSO_REDIRECT_URI": "http://app.localhost/auth/callback",
+    "SSO_LOGOUT_REDIRECT_URI": "http://app.localhost/",
     "SSO_SCOPES": "openid profile email"
   },
 
