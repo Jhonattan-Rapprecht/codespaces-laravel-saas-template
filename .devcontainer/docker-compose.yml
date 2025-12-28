@@ -9,7 +9,7 @@ services:
       - "--entrypoints.web.address=:80"
     ports:
       - "80:80"
-      - "8082:8080"
+      - "8082:8080" # Traefik dashboard
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
     networks:
@@ -36,7 +36,7 @@ services:
   queue-worker:
     build:
       context: ..
-    dockerfile: .devcontainer/Dockerfile
+      dockerfile: .devcontainer/Dockerfile
     volumes:
       - ${LOCAL_WORKSPACE_FOLDER:-..}:/workspace:cached
     command: php /workspace/artisan queue:work --tries=3
@@ -117,7 +117,7 @@ services:
     image: axllent/mailpit
     restart: always
     ports:
-      - "1025:1025"
+      - "1025:1025" # SMTP port
     labels:
       - "traefik.enable=true"
       - "traefik.http.routers.mailpit.rule=Host(`mail.localhost`)"
