@@ -1,7 +1,33 @@
-// .devcontainer/devcontainer.json
 {
-  "name": "Laravel Dev",
+  "name": "Laravel SaaS Dev",
+  "dockerComposeFile": "docker-compose.yml",
+  "service": "app",
+  "workspaceFolder": "/workspace",
+
+  // Runs after the container is created
   "postCreateCommand": "composer install",
+
+  // Runs every time the container starts
   "postStartCommand": "php artisan serve --host=0.0.0.0 --port=8000",
-  "forwardPorts": [8000]
+
+  // Forward important ports
+  "forwardPorts": [
+    8000, // Laravel
+    3306, // MySQL
+    6379, // Redis
+    8080, // phpMyAdmin
+    8025  // Mailpit
+  ],
+
+  "customizations": {
+    "vscode": {
+      "extensions": [
+        "bmewburn.vscode-intelephense-client",
+        "ms-azuretools.vscode-docker",
+        "xdebug.php-debug",
+        "onecentlin.laravel-blade"
+      ]
+    }
+  }
 }
+
