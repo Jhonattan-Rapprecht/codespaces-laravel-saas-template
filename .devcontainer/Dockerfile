@@ -10,6 +10,9 @@ RUN apt-get update && apt-get install -y \
     libxml2-dev \
     && docker-php-ext-install pdo_mysql zip gd
 
+RUN apt-get update && apt-get install -y default-mysql-client
+
+
 # Install Composer
 COPY --from=composer:2 /usr/bin/composer /usr/bin/composer
 
