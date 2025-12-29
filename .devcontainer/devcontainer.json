@@ -4,34 +4,68 @@
   "service": "app",
   "workspaceFolder": "/workspace",
 
+  "runServices": [
 
-"preCreateCommand": [
-  "cd /workspace && [ ! -f .env ] && cp .env.example .env || true",
-  "cd /workspace && grep -q 'APP_KEY=' .env || php artisan key:generate"
-],
-
-"postCreateCommand": [
-  "cd /workspace && composer install",
-  "cd /workspace && npm install",
-  "cd /workspace && php artisan migrate --force"
-],
-
-"postStartCommand": [
-  "cd /workspace && php artisan config:clear",
-  "cd /workspace && php artisan route:clear",
-  "cd /workspace && php artisan view:clear",
-  "cd /workspace && php artisan serve --host=0.0.0.0 --port=8000 &"
-],
-
-
-  // Forward important ports
-  "forwardPorts": [
-    8000, // Laravel
-    3306, // MySQL
-    6379, // Redis
-    8080, // phpMyAdmin
-    8025  // Mailpit
+    "app",
+    "mysql",
+    "redis",
+    "mailpit",
+    "phpmyadmin"
   ],
+
+  // -------------------------
+  // PRE-CREATE: Fix .env BEFORE anything else
+  // -------------------------
+  "preCreateCommand": [
+    // Create .env if missing
+    "cd /workspace && [ ! -f .env ] && cp .env.example .env || true",
+
+    // Force correct DB/Redis/Mailpit settings
+    "cd /workspace && sed -i 's/^DB_CONNECTION=.*/DB_CONNECTION=mysql/' .env",
+    "cd /workspace && sed -i 's/^DB_HOST=.*/DB_HOST=mysql/' .env",
+    "cd /workspace && sed -i 's/^DB_PORT=.*/DB_PORT=3306/' .env",
+    "cd /workspace && sed -i 's/^DB_DATABASE=.*/DB_DATABASE=laravel/' .env",
+    "cd /workspace && sed -i 's/^DB_USERNAME=.*/DB_USERNAME=laravel/' .env",
+    "cd /workspace && sed -i 's/^DB_PASSWORD=.*/DB_PASSWORD=laravel/' .env",
+
+    "cd /workspace && sed -i 's/^REDIS_HOST=.*/REDIS_HOST=redis/' .env",
+    "cd /workspace && sed -i 's/^MAIL_HOST=.*/MAIL_HOST=mailpit/' .env",
+    "cd /workspace && sed -i 's/^MAIL_PORT=.*/MAIL_PORT=1025/' .env",
+
+    // Fix APP_URL for Traefik
+    "cd /workspace && sed -i 's/^APP_URL=.*/APP_URL=http:\\/\\/app.localhost/' .env",
+
+    // Generate APP_KEY only if missing
+    "cd /workspace && grep -q 'APP_KEY=base64' .env || php artisan key:generate"
+  ],
+
+  // -------------------------
+  // POST-CREATE: Install deps
+  // -------------------------
+  "postCreateCommand": [
+    "cd /workspace && composer install",
+    "cd /workspace && npm install",
+    "cd /workspace && php artisan migrate --force"
+  ],
+
+  // -------------------------
+  // POST-START: Clear caches + start server
+  // -------------------------
+  "postStartCommand": [
+    "cd /workspace && php artisan config:clear",
+    "cd /workspace && php artisan route:clear",
+    "cd /workspace && php artisan view:clear",
+
+    // Start server only if not already running
+    "pgrep -f 'artisan serve' > /dev/null || (cd /workspace && php artisan serve --host=0.0.0.0 --port=8000 &)"
+  ],
+
+  "forwardPorts": [80, 8082, 3306, 6379, 8025, 1025],
+
+  "containerEnv": {
+    "APP_ENV": "local",
+    "APP_DEBUG": "true"
+  },
 
   "customizations": {
     "vscode": {
@@ -39,8 +73,21 @@
         "bmewburn.vscode-intelephense-client",
         "ms-azuretools.vscode-docker",
         "xdebug.php-debug",
-        "onecentlin.laravel-blade"
-      ]
+        "onecentlin.laravel-blade",
+        "esbenp.prettier-vscode",
+        "dbaeumer.vscode-eslint",
+        "mhutchie.git-graph",
+        "mehedidracula.php-namespace-resolver"
+      ],
+      "settings": {
+        "editor.formatOnSave": true,
+        "php.validate.executablePath": "/usr/local/bin/php",
+        "intelephense.environment.phpVersion": "8.4",
+        "files.exclude": {
+          "**/vendor": true,
+          "**/node_modules": true
+        }
+      }
     }
   }
 }
