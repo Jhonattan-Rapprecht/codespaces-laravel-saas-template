@@ -3,79 +3,67 @@
   "dockerComposeFile": "docker-compose.yml",
   "service": "app",
   "workspaceFolder": "/workspace",
-
   "runServices": [
-
     "app",
     "mysql",
     "redis",
     "mailpit",
     "phpmyadmin"
   ],
-
-  // -------------------------
-  // PRE-CREATE: Fix .env BEFORE anything else
-  // -------------------------
-  "preCreateCommand": [
-    // Create .env if missing
-    "cd /workspace && [ ! -f .env ] && cp .env.example .env || true",
-
-    // Force correct DB/Redis/Mailpit settings
-    "cd /workspace && sed -i 's/^DB_CONNECTION=.*/DB_CONNECTION=mysql/' .env",
-    "cd /workspace && sed -i 's/^DB_HOST=.*/DB_HOST=mysql/' .env",
-    "cd /workspace && sed -i 's/^DB_PORT=.*/DB_PORT=3306/' .env",
-    "cd /workspace && sed -i 's/^DB_DATABASE=.*/DB_DATABASE=laravel/' .env",
-    "cd /workspace && sed -i 's/^DB_USERNAME=.*/DB_USERNAME=laravel/' .env",
-    "cd /workspace && sed -i 's/^DB_PASSWORD=.*/DB_PASSWORD=laravel/' .env",
-
-    "cd /workspace && sed -i 's/^REDIS_HOST=.*/REDIS_HOST=redis/' .env",
-    "cd /workspace && sed -i 's/^MAIL_HOST=.*/MAIL_HOST=mailpit/' .env",
-    "cd /workspace && sed -i 's/^MAIL_PORT=.*/MAIL_PORT=1025/' .env",
-
-    // Fix APP_URL for Traefik
-    "cd /workspace && sed -i 's/^APP_URL=.*/APP_URL=http:\\/\\/app.localhost/' .env",
-
-    // Generate APP_KEY only if missing
-    "cd /workspace && grep -q 'APP_KEY=base64' .env || php artisan key:generate"
-  ],
-
-  // -------------------------
-  // POST-CREATE: Install deps
-  // -------------------------
-  "postCreateCommand": [
-    "cd /workspace && composer install",
-    "cd /workspace && npm install",
-    "cd /workspace && php artisan migrate --force"
-  ],
-
-  // -------------------------
-  // POST-START: Clear caches + start server
-  // -------------------------
-  "postStartCommand": [
-    "cd /workspace && php artisan config:clear",
-    "cd /workspace && php artisan route:clear",
-    "cd /workspace && php artisan view:clear",
-
-    // Start server only if not already running
-    "pgrep -f 'artisan serve' > /dev/null || (cd /workspace && php artisan serve --host=0.0.0.0 --port=8000 &)"
-  ],
-
-  "forwardPorts": [80, 8082, 3306, 6379, 8025, 1025],
-
+  "shutdownAction": "stopCompose",
+  "remoteUser": "vscode",
+  "features": {
+    "ghcr.io/devcontainers/features/git:1": {}
+  },
   "containerEnv": {
     "APP_ENV": "local",
-    "APP_DEBUG": "true"
+    "APP_DEBUG": "true",
+    "XDEBUG_MODE": "debug,develop",
+    "XDEBUG_CONFIG": "client_host=localhost client_port=9003"
   },
-
+  "postCreateCommand": "cd /workspace && ([ -f .env ] || cp .env.example .env) && sed -i 's/^DB_CONNECTION=.*/DB_CONNECTION=mysql/;s/^DB_HOST=.*/DB_HOST=mysql/;s/^DB_PORT=.*/DB_PORT=3306/;s/^DB_DATABASE=.*/DB_DATABASE=laravel/;s/^DB_USERNAME=.*/DB_USERNAME=laravel/;s/^DB_PASSWORD=.*/DB_PASSWORD=laravel/;s/^REDIS_HOST=.*/REDIS_HOST=redis/;s/^MAIL_HOST=.*/MAIL_HOST=mailpit/;s/^MAIL_PORT=.*/MAIL_PORT=1025/' .env && composer install && npm install && (grep -q '^APP_KEY=base64' .env || php artisan key:generate) && php artisan migrate --force",
+  "postStartCommand": "cd /workspace && php artisan config:clear && php artisan route:clear && php artisan view:clear",
+  "forwardPorts": [
+    8000,
+    5173,
+    3306,
+    8080,
+    8025,
+    6379
+  ],
+  "portsAttributes": {
+    "8000": {
+      "label": "Laravel",
+      "onAutoForward": "notify"
+    },
+    "8080": {
+      "label": "phpMyAdmin"
+    },
+    "8025": {
+      "label": "Mailpit"
+    },
+    "5173": {
+      "label": "Vite"
+    },
+    "3306": {
+      "label": "MySQL",
+      "onAutoForward": "silent"
+    }
+  },
   "customizations": {
     "vscode": {
       "extensions": [
         "bmewburn.vscode-intelephense-client",
-        "ms-azuretools.vscode-docker",
         "xdebug.php-debug",
         "onecentlin.laravel-blade",
+        "onecentlin.laravel5-snippets",
+        "amiralizadeh9480.laravel-extra-intellisense",
+        "absszero.vscode-laravel-goto",
+        "ms-azuretools.vscode-docker",
         "esbenp.prettier-vscode",
         "dbaeumer.vscode-eslint",
+        "editorconfig.editorconfig",
+        "eamodio.gitlens",
         "mhutchie.git-graph",
         "mehedidracula.php-namespace-resolver"
       ],
@@ -86,6 +74,14 @@
         "files.exclude": {
           "**/vendor": true,
           "**/node_modules": true
+        },
+        "search.exclude": {
+          "**/vendor": true,
+          "**/node_modules": true
+        },
+        "files.watcherExclude": {
+          "**/vendor/**": true,
+          "**/node_modules/**": true
         }
       }
     }
