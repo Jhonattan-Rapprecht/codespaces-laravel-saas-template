@@ -9,9 +9,11 @@ use Illuminate\View\View;
 
 class ModuleController extends Controller
 {
-    public function show(string $slug): View
+    public function show(string $organizationSlug, string $slug): View
     {
-        $organization = Organization::query()->findOrFail(tenant('id'));
+        $organization = Organization::query()
+            ->where('slug', $organizationSlug)
+            ->findOrFail(tenant('id'));
         $module = $organization->modules()
             ->wherePivot('enabled', true)
             ->where('modules.enabled', true)

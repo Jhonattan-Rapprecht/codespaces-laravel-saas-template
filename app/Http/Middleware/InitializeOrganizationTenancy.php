@@ -13,11 +13,13 @@ class InitializeOrganizationTenancy
 {
     public function handle(Request $request, Closure $next): Response
     {
-        $slug = config('tenancy.resolution') === 'subdomain'
-            ? $this->subdomain($request)
-            : $request->segment(1) === 't'
-                ? $request->segment(2)
-                : $request->header('X-Tenant');
+        if (config('tenancy.resolution') === 'subdomain') {
+            $slug = $this->subdomain($request);
+        } elseif ($request->segment(1) === 't') {
+            $slug = $request->segment(2);
+        } else {
+            $slug = $request->header('X-Tenant');
+        }
 
         abort_unless(is_string($slug) && $slug !== '', 404);
 
