@@ -13,9 +13,23 @@ class User extends Authenticatable
     /** @use HasFactory<\Database\Factories\UserFactory> */
     use HasFactory, Notifiable;
 
+    public const ROLE_ADMIN = 'tenant-admin';
+
+    public const ROLE_MEMBER = 'member';
+
     public function roles(): BelongsToMany
     {
         return $this->belongsToMany(Role::class);
+    }
+
+    public function hasRole(string $key): bool
+    {
+        return $this->roles->contains('key', $key);
+    }
+
+    public function isTenantAdmin(): bool
+    {
+        return $this->hasRole(self::ROLE_ADMIN);
     }
 
     /**

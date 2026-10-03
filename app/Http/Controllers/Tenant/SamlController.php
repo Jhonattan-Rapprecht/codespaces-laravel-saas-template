@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Tenant;
 use App\Http\Controllers\Controller;
 use App\Models\Organization;
 use App\Models\OrganizationSamlConnection;
+use App\Models\Role;
 use App\Models\SamlAuthenticationRequest;
 use App\Models\User;
 use App\Saml\SamlService;
@@ -126,6 +127,11 @@ class SamlController extends Controller
 
             $user->saml_subject = $subject;
             $user->save();
+
+            if ($user->roles()->doesntExist()) {
+                $memberRole = Role::query()->where('key', User::ROLE_MEMBER)->first();
+                $memberRole && $user->roles()->attach($memberRole->id);
+            }
         }
 
         Auth::guard('web')->login($user);

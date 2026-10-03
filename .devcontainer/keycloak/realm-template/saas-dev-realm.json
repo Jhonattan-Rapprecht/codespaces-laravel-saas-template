@@ -8,12 +8,12 @@
       "name": "Laravel SaaS Template - demo organization",
       "enabled": true,
       "protocol": "saml",
-      "baseUrl": "http://localhost:8000/t/demo",
+      "baseUrl": "__APP_URL__/t/demo",
       "redirectUris": [
-        "http://localhost:8000/*"
+        "__APP_URL__/*"
       ],
       "attributes": {
-        "saml_assertion_consumer_url_post": "http://localhost:8000/t/demo/saml/acs",
+        "saml_assertion_consumer_url_post": "__APP_URL__/t/demo/saml/acs",
         "saml_idp_initiated_sso_url_name": "laravel-saas",
         "saml_name_id_format": "email",
         "saml.assertion.signature": "true",
@@ -46,6 +46,22 @@
             "attribute.name": "name",
             "attribute.nameformat": "Basic"
           }
+        }
+      ]
+    }
+  ],
+  "users": [
+    {
+      "username": "admin@demo.test",
+      "email": "admin@demo.test",
+      "firstName": "Demo Administrator",
+      "enabled": true,
+      "emailVerified": true,
+      "credentials": [
+        {
+          "type": "password",
+          "value": "__DEV_USER_PASSWORD__",
+          "temporary": false
         }
       ]
     }

@@ -57,6 +57,11 @@ services:
       - /opt/keycloak/keycloak-entrypoint.sh
     environment:
       KC_BOOTSTRAP_ADMIN_USERNAME: admin
+      KC_BOOTSTRAP_ADMIN_PASSWORD: ${KEYCLOAK_ADMIN_PASSWORD:-keycloak-dev-admin}
+      KEYCLOAK_DEV_USER_PASSWORD: ${KEYCLOAK_DEV_USER_PASSWORD:-Demo-Sso-Pass-1}
+      APP_PUBLIC_URL: ${APP_PUBLIC_URL:-}
+      CODESPACE_NAME: ${CODESPACE_NAME:-}
+      GITHUB_CODESPACES_PORT_FORWARDING_DOMAIN: ${GITHUB_CODESPACES_PORT_FORWARDING_DOMAIN:-}
       KC_HOSTNAME_STRICT: "false"
       KC_HTTP_ENABLED: "true"
       KC_HEALTH_ENABLED: "true"
@@ -65,7 +70,7 @@ services:
       - "8081:8080"
     volumes:
       - ./keycloak-entrypoint.sh:/opt/keycloak/keycloak-entrypoint.sh:ro
-      - ./keycloak/realm-import:/opt/keycloak/data/import:ro
+      - ./keycloak/realm-template:/opt/keycloak/realm-template:ro
       - keycloak-data:/opt/keycloak/data
 
 volumes:

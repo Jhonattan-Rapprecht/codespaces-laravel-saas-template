@@ -8,6 +8,7 @@ use App\Models\SuperAdmin;
 use App\Saml\SamlService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Http;
 use Tests\TestCase;
 
 class SamlConfigurationTest extends TestCase
@@ -130,6 +131,34 @@ class SamlConfigurationTest extends TestCase
             'email' => 'platform@example.test',
             'password' => 'a-long-test-password',
         ]);
+    }
+
+    public function test_metadata_import_command_configures_the_connection(): void
+    {
+        $organization = $this->createOrganization();
+        $certificate = $this->normalizedCertificate($this->certificate());
+        $xml = '<md:EntityDescriptor xmlns:md="urn:oasis:names:tc:SAML:2.0:metadata" xmlns:ds="http://www.w3.org/2000/09/xmldsig#" entityID="https://idp.example.test/realm">'
+            .'<md:IDPSSODescriptor protocolSupportEnumeration="urn:oasis:names:tc:SAML:2.0:protocol">'
+            .'<md:KeyDescriptor use="signing"><ds:KeyInfo><ds:X509Data><ds:X509Certificate>'.$certificate.'</ds:X509Certificate></ds:X509Data></ds:KeyInfo></md:KeyDescriptor>'
+            .'<md:SingleSignOnService Binding="urn:oasis:names:tc:SAML:2.0:bindings:HTTP-POST" Location="https://idp.example.test/realm/sso"/>'
+            .'</md:IDPSSODescriptor></md:EntityDescriptor>';
+        Http::fake(['idp.internal/*' => Http::response($xml)]);
+
+        $this->artisan('saml:import-metadata', [
+            'organization' => $organization->slug,
+            'url' => 'http://idp.internal/metadata',
+            '--forwarded-host' => 'idp.example.test',
+            '--enable' => true,
+        ])->assertSuccessful();
+
+        Http::assertSent(fn ($request) => $request->hasHeader('X-Forwarded-Host', 'idp.example.test'));
+        $connection = $organization->fresh()->samlConnection;
+        $this->assertSame('https://idp.example.test/realm', $connection->idp_entity_id);
+        $this->assertSame('https://idp.example.test/realm/sso', $connection->sso_url);
+        $this->assertSame($certificate, $connection->x509_certificate);
+        $this->assertTrue($connection->enabled);
+
+        $this->artisan('saml:import-metadata', ['organization' => 'missing', 'url' => 'http://idp.internal/metadata'])->assertFailed();
     }
 
     private function certificate(): string

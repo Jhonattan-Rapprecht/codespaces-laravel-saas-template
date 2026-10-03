@@ -22,3 +22,18 @@ roles; Settings shows the organization's name and SAML sign-in status.
 
 Run `php artisan db:seed` after central migrations to install the default module
 catalog as well as the demo organization.
+
+## Roles and managing users
+
+Every tenant user has one role: **Tenant administrator** or **Member**. Users who
+first sign in through SAML become Members. On the **Team** module (it must be
+enabled for the organization), everyone can see the member list, and tenant
+administrators can also:
+
+- create a user with a name, email, role, and an initial password (at least 12
+  characters),
+- change a user's role, and
+- set a new password for a user.
+
+The organization must always keep at least one administrator, so the last one
+cannot be demoted. Members receive a 403 on all management actions.

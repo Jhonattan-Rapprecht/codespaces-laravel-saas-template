@@ -6,6 +6,7 @@ use App\Http\Controllers\Tenant\DashboardController;
 use App\Http\Controllers\Tenant\LoginController;
 use App\Http\Controllers\Tenant\ModuleController;
 use App\Http\Controllers\Tenant\SamlController;
+use App\Http\Controllers\Tenant\TeamController;
 use App\Http\Middleware\InitializeOrganizationTenancy;
 use Illuminate\Support\Facades\Route;
 use Stancl\Tenancy\Middleware\PreventAccessFromCentralDomains;
@@ -49,6 +50,14 @@ Route::prefix($prefix)->middleware($middleware)->group(function () {
     Route::get('/modules/{slug}', [ModuleController::class, 'show'])
         ->middleware(App\Http\Middleware\AuthenticateTenantUser::class)
         ->name('tenant.modules.show');
+
+    Route::middleware([App\Http\Middleware\AuthenticateTenantUser::class, App\Http\Middleware\EnsureTenantAdmin::class])
+        ->prefix('team')
+        ->group(function () {
+            Route::post('/users', [TeamController::class, 'store'])->name('tenant.team.store');
+            Route::patch('/users/{user}/role', [TeamController::class, 'updateRole'])->whereNumber('user')->name('tenant.team.role');
+            Route::put('/users/{user}/password', [TeamController::class, 'updatePassword'])->whereNumber('user')->name('tenant.team.password');
+        });
 
     Route::get('/saml/login', [SamlController::class, 'login'])->name('tenant.saml.login');
     Route::post('/saml/acs', [SamlController::class, 'assertionConsumer'])->name('tenant.saml.acs');

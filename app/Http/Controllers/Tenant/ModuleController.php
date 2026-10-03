@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Tenant;
 
 use App\Http\Controllers\Controller;
 use App\Models\Organization;
+use App\Models\Role;
 use App\Models\User;
 use Illuminate\View\View;
 
@@ -24,6 +25,8 @@ class ModuleController extends Controller
             'team' => view('tenant.modules.team', [
                 'organization' => $organization,
                 'members' => User::query()->with('roles')->orderBy('name')->get(),
+                'roles' => Role::query()->orderBy('name')->get(),
+                'canManage' => (bool) auth()->user()?->isTenantAdmin(),
             ]),
             'settings' => view('tenant.modules.settings', [
                 'organization' => $organization,

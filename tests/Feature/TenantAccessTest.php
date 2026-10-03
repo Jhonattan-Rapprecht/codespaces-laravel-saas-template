@@ -10,6 +10,7 @@ use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Str;
 use Tests\TestCase;
 
@@ -90,6 +91,105 @@ class TenantAccessTest extends TestCase
             ->assertDontSee('type="password"', false);
         $this->post(route('tenant.login.store', $slug), $credentials)->assertNotFound();
         $this->assertGuest('web');
+    }
+
+    public function test_only_tenant_admins_can_manage_team_users_and_roles(): void
+    {
+        $organization = $this->createOrganizationWithTeamModule('org-a', 'acme');
+        $admin = $this->createTenantUserWithRole($organization, 'admin@acme.test', 'tenant-admin');
+        $member = $this->createTenantUserWithRole($organization, 'member@acme.test', 'member');
+        $slug = ['organization' => $organization->slug];
+        $newUser = ['name' => 'New Person', 'email' => 'new@acme.test', 'role' => 'member', 'password' => 'a-long-initial-password'];
+
+        $this->actingAs($member, 'web')
+            ->withSession(['_token' => 'csrf-test-token'])
+            ->post(route('tenant.team.store', $slug), $newUser + ['_token' => 'csrf-test-token'])
+            ->assertForbidden();
+
+        $this->actingAs($member, 'web')
+            ->get(route('tenant.modules.show', $slug + ['slug' => 'team']))
+            ->assertOk()
+            ->assertDontSee('Add a user');
+
+        $this->actingAs($admin, 'web')
+            ->withSession(['_token' => 'csrf-test-token'])
+            ->get(route('tenant.modules.show', $slug + ['slug' => 'team']))
+            ->assertOk()
+            ->assertSee('Add a user');
+
+        $this->actingAs($admin, 'web')
+            ->withSession(['_token' => 'csrf-test-token'])
+            ->post(route('tenant.team.store', $slug), $newUser + ['_token' => 'csrf-test-token'])
+            ->assertRedirect()
+            ->assertSessionHas('status', 'User created.');
+
+        $this->post(route('tenant.team.store', $slug), ['email' => 'new@acme.test'] + $newUser + ['_token' => 'csrf-test-token'])
+            ->assertSessionHasErrors('email');
+
+        $this->post(route('tenant.team.store', $slug), ['email' => 'weak@acme.test', 'password' => 'short', '_token' => 'csrf-test-token'] + $newUser)
+            ->assertSessionHasErrors('password');
+
+        tenancy()->initialize($organization);
+        $created = User::query()->with('roles')->where('email', 'new@acme.test')->firstOrFail();
+        $this->assertSame(['member'], $created->roles->pluck('key')->all());
+        tenancy()->end();
+    }
+
+    public function test_last_tenant_admin_cannot_be_demoted_and_roles_can_change(): void
+    {
+        $organization = $this->createOrganizationWithTeamModule('org-a', 'acme');
+        $admin = $this->createTenantUserWithRole($organization, 'admin@acme.test', 'tenant-admin');
+        $member = $this->createTenantUserWithRole($organization, 'member@acme.test', 'member');
+        $slug = ['organization' => $organization->slug];
+
+        $this->actingAs($admin, 'web')->withSession(['_token' => 'csrf-test-token']);
+
+        $this->patch(route('tenant.team.role', $slug + ['user' => $admin->id]), ['role' => 'member', '_token' => 'csrf-test-token'])
+            ->assertSessionHasErrors('role');
+
+        $this->patch(route('tenant.team.role', $slug + ['user' => $member->id]), ['role' => 'tenant-admin', '_token' => 'csrf-test-token'])
+            ->assertSessionHas('status', 'Role updated.');
+
+        $this->patch(route('tenant.team.role', $slug + ['user' => $admin->id]), ['role' => 'member', '_token' => 'csrf-test-token'])
+            ->assertSessionHas('status', 'Role updated.');
+
+        $this->patch(route('tenant.team.role', $slug + ['user' => $member->id]), ['role' => 'nonexistent', '_token' => 'csrf-test-token'])
+            ->assertSessionHasErrors('role');
+    }
+
+    public function test_admin_can_set_a_password_that_works_for_password_login(): void
+    {
+        $organization = $this->createOrganizationWithTeamModule('org-a', 'acme');
+        $admin = $this->createTenantUserWithRole($organization, 'admin@acme.test', 'tenant-admin');
+        $member = $this->createTenantUserWithRole($organization, 'member@acme.test', 'member');
+        $slug = ['organization' => $organization->slug];
+
+        $this->actingAs($admin, 'web')
+            ->withSession(['_token' => 'csrf-test-token'])
+            ->put(route('tenant.team.password', $slug + ['user' => $member->id]), ['password' => 'short', '_token' => 'csrf-test-token'])
+            ->assertSessionHasErrors('password');
+
+        $this->put(route('tenant.team.password', $slug + ['user' => $member->id]), ['password' => 'brand-new-password-1', '_token' => 'csrf-test-token'])
+            ->assertSessionHas('status', 'Password updated.');
+
+        auth('web')->logout();
+        $this->withSession(['_token' => 'csrf-test-token'])
+            ->post(route('tenant.login.store', $slug), ['email' => 'member@acme.test', 'password' => 'brand-new-password-1', '_token' => 'csrf-test-token'])
+            ->assertRedirect();
+        $this->assertAuthenticatedAs($member->fresh(), 'web');
+    }
+
+    public function test_team_management_requires_the_team_module(): void
+    {
+        $organization = $this->createOrganization('org-a', 'acme');
+        $admin = $this->createTenantUserWithRole($organization, 'admin@acme.test', 'tenant-admin');
+
+        $this->actingAs($admin, 'web')
+            ->withSession(['_token' => 'csrf-test-token'])
+            ->post(route('tenant.team.store', ['organization' => $organization->slug]), [
+                'name' => 'X', 'email' => 'x@acme.test', 'role' => 'member', 'password' => 'a-long-initial-password', '_token' => 'csrf-test-token',
+            ])
+            ->assertNotFound();
     }
 
     public function test_dashboard_lists_only_enabled_modules_and_team_access_is_tenant_scoped(): void
@@ -174,6 +274,42 @@ class TenantAccessTest extends TestCase
         ])->assertStatus(419);
 
         $this->assertNull($state->fresh()->consumed_at);
+    }
+
+    private function createOrganizationWithTeamModule(string $id, string $slug): Organization
+    {
+        $organization = $this->createOrganization($id, $slug);
+        $team = Module::query()->create([
+            'slug' => 'team',
+            'name' => 'Team',
+            'description' => 'View tenant users and their roles.',
+            'enabled' => true,
+        ]);
+        $organization->modules()->attach($team->id, ['enabled' => true]);
+
+        return $organization;
+    }
+
+    private function createTenantUserWithRole(Organization $organization, string $email, string $roleKey): User
+    {
+        tenancy()->initialize($organization);
+
+        if (! Schema::hasTable('users')) {
+            $this->assertSame(0, Artisan::call('migrate', [
+                '--database' => 'tenant',
+                '--path' => database_path('migrations/tenant'),
+                '--realpath' => true,
+                '--force' => true,
+            ]), Artisan::output());
+        }
+
+        $user = User::query()->create(['name' => ucfirst(strstr($email, '@', true)), 'email' => $email, 'password' => 'a-long-tenant-password']);
+        $role = Role::query()->firstOrCreate(['key' => $roleKey], ['name' => ucfirst($roleKey)]);
+        $user->roles()->attach($role->id);
+
+        tenancy()->end();
+
+        return $user;
     }
 
     private function createOrganization(string $id, string $slug): Organization

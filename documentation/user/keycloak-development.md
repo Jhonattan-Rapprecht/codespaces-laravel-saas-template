@@ -1,40 +1,61 @@
 # Keycloak development identity provider
 
-The devcontainer starts Keycloak 26.8 on port `8081` and imports the
-`saas-dev` realm with a SAML client for the demo organization. This realm is for
-local development only; it has HTTP enabled and uses an ephemeral development
-database volume.
+The devcontainer starts Keycloak 26.8 on port `8081` and imports the `saas-dev`
+realm with a SAML client for the demo organization and one demo user. This realm
+is for local development only; it has HTTP enabled, fixed credentials, and a
+development database volume.
 
-The bootstrap administrator username is `admin`. Its password is generated at
-first start and stored with mode `0600` inside the Keycloak data volume. On the
-Docker host, retrieve it with:
+## Credentials (development only)
+
+| Account | Where | Username | Password |
+|---|---|---|---|
+| Keycloak admin | `https://<codespace>-8081.app.github.dev` admin console | `admin` | `keycloak-dev-admin` |
+| Realm user | `saas-dev` realm, signs in through SSO | `admin@demo.test` | `Demo-Sso-Pass-1` |
+
+Override them with `KEYCLOAK_ADMIN_PASSWORD` and `KEYCLOAK_DEV_USER_PASSWORD`
+in the environment before the Keycloak container first starts. Never reuse these
+values outside local development.
+
+The realm user's email matches the seeded demo tenant administrator, so SSO
+signs in as the demo administrator.
+
+## First start and resetting
+
+Keycloak only imports the realm when it does not exist yet. The SAML client's ACS
+URL and redirect URI are rendered from `APP_PUBLIC_URL` on that first start; in
+Codespaces they default to `https://<codespace>-8000.app.github.dev`, otherwise
+`http://localhost:8000`. After changing credentials or the public URL, rebuild the
+devcontainer and remove the Keycloak volume so the realm is re-imported:
 
 ```sh
-docker compose -f .devcontainer/docker-compose.yml exec keycloak \
-  cat /opt/keycloak/data/.bootstrap-admin-password
+docker compose -f .devcontainer/docker-compose.yml down keycloak
+docker volume rm "$(docker volume ls -q | grep keycloak-data)"
+docker compose -f .devcontainer/docker-compose.yml up -d keycloak
 ```
 
-Do not copy this local credential into source control or use it outside the
-development Keycloak instance.
+(From the Codespace host terminal, not from inside the app container.)
 
-Open the forwarded **Keycloak** port and create a test user in the `saas-dev`
-realm. Set the user's email and first name; the imported SAML client emits those
-as `email` and `name` attributes and signs both the response and assertion.
+## Connect the demo organization
 
-In the superadmin back office, configure the demo organization with:
+A re-imported realm has new signing keys, so refresh the organization's SAML
+connection from the realm metadata. From the app container:
 
-- **IdP entity ID:** `http://localhost:8081/realms/saas-dev`
-- **SSO URL:** `http://localhost:8081/realms/saas-dev/protocol/saml`
-- **Signing certificate:** copy the active realm signing certificate from
-  `http://localhost:8081/realms/saas-dev/protocol/saml/descriptor` into PEM form
-- **Email attribute:** `email`
-- **Display-name attribute:** `name`
+```sh
+php artisan saml:import-metadata demo \
+  http://keycloak:8080/realms/saas-dev/protocol/saml/descriptor \
+  --forwarded-host="${CODESPACE_NAME}-8081.${GITHUB_CODESPACES_PORT_FORWARDING_DOMAIN}" \
+  --enable
+```
 
-Register the service-provider entity ID and ACS URL shown in the back office.
-The imported Keycloak client defaults to the local `/t/demo/saml/acs` URL. For
-Codespaces or a different local host, update the client's POST ACS URL and
-redirect URI to the exact ACS URL shown by the application. The forwarded
-Keycloak SSO URL must also be reachable by the user's browser.
+`--forwarded-host` makes Keycloak report the browser-reachable URL as the entity
+ID and SSO URL. Locally without Codespaces, use
+`http://localhost:8081/realms/saas-dev/protocol/saml/descriptor` and omit the
+option. The command prints the service-provider entity ID and ACS URL to
+register with the IdP.
+
+Then open `<APP_URL>/t/demo/login`, choose **Continue with organization SSO**,
+and sign in as `admin@demo.test`. Make sure port `8081` is forwarded and
+reachable by your browser.
 
 The Keycloak configuration is development-only and does not replace production
 TLS, secret management, or tenant-specific IdP configuration.
