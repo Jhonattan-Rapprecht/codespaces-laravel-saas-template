@@ -1,33 +1,24 @@
-<!DOCTYPE html>
-<html lang="{{ str_replace('_', '-', app()->getLocale()) }}">
-<head>
-    <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>{{ __('Superadmin sign in') }} - {{ config('app.name') }}</title>
-</head>
-<body>
-    <main>
-        <h1>{{ __('Superadmin sign in') }}</h1>
-        <form method="POST" action="{{ route('admin.login.store') }}">
-            @csrf
-            <label for="email">{{ __('Email') }}</label>
-            <input id="email" name="email" type="email" value="{{ old('email') }}" required autofocus autocomplete="username">
+<x-layouts.guest :title="__('Superadmin sign in').' - '.config('app.name')" :heading="__('Superadmin sign in')" :subheading="__('Platform back office')">
+    <form method="POST" action="{{ route('admin.login.store') }}" class="space-y-4">
+        @csrf
+        <div>
+            <label for="email" class="field-label">{{ __('Email') }}</label>
+            <input id="email" name="email" type="email" value="{{ old('email') }}" required autofocus autocomplete="username" class="field-input">
             @error('email')
-                <p role="alert">{{ $message }}</p>
+                <p role="alert" class="field-error">{{ $message }}</p>
             @enderror
-
-            <label for="password">{{ __('Password') }}</label>
-            <input id="password" name="password" type="password" required autocomplete="current-password">
+        </div>
+        <div>
+            <label for="password" class="field-label">{{ __('Password') }}</label>
+            <input id="password" name="password" type="password" required autocomplete="current-password" class="field-input">
             @error('password')
-                <p role="alert">{{ $message }}</p>
+                <p role="alert" class="field-error">{{ $message }}</p>
             @enderror
-
-            <label>
-                <input type="checkbox" name="remember" value="1">
-                {{ __('Remember me') }}
-            </label>
-            <button type="submit">{{ __('Sign in') }}</button>
-        </form>
-    </main>
-</body>
-</html>
+        </div>
+        <label class="flex items-center gap-2 text-sm text-slate-600">
+            <input type="checkbox" name="remember" value="1" class="h-4 w-4 rounded border-slate-300 text-indigo-600 focus:ring-indigo-500">
+            {{ __('Remember me') }}
+        </label>
+        <button type="submit" class="btn w-full">{{ __('Sign in') }}</button>
+    </form>
+</x-layouts.guest>

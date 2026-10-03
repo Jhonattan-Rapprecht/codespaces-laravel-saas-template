@@ -1,33 +1,29 @@
-<!DOCTYPE html>
-<html lang="{{ str_replace('_', '-', app()->getLocale()) }}">
-<head>
-    <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>{{ __('Sign in') }} - {{ $organization->name }}</title>
-</head>
-<body>
-    <main>
-        <h1>{{ __('Sign in to :organization', ['organization' => $organization->name]) }}</h1>
-        @if ($samlEnabled)
-            <a href="{{ $samlLoginUrl }}">{{ __('Continue with organization SSO') }}</a>
-        @else
-            <form method="POST" action="{{ $passwordLoginUrl }}">
-                @csrf
-                <div>
-                    <label for="email">{{ __('Email') }}</label>
-                    <input id="email" type="email" name="email" value="{{ old('email') }}" required autofocus autocomplete="username">
-                    @error('email')
-                        <p role="alert">{{ $message }}</p>
-                    @enderror
-                </div>
-                <div>
-                    <label for="password">{{ __('Password') }}</label>
-                    <input id="password" type="password" name="password" required autocomplete="current-password">
-                </div>
-                <label><input type="checkbox" name="remember" value="1"> {{ __('Remember me') }}</label>
-                <button type="submit">{{ __('Sign in') }}</button>
-            </form>
-        @endif
-    </main>
-</body>
-</html>
+<x-layouts.guest
+    :title="__('Sign in').' - '.$organization->name"
+    :heading="__('Sign in to :organization', ['organization' => $organization->name])"
+    :subheading="$samlEnabled ? __('Use your organization’s single sign-on.') : __('Enter your email and password to continue.')"
+>
+    @if ($samlEnabled)
+        <a href="{{ $samlLoginUrl }}" class="btn w-full">{{ __('Continue with organization SSO') }}</a>
+    @else
+        <form method="POST" action="{{ $passwordLoginUrl }}" class="space-y-4">
+            @csrf
+            <div>
+                <label for="email" class="field-label">{{ __('Email') }}</label>
+                <input id="email" type="email" name="email" value="{{ old('email') }}" required autofocus autocomplete="username" class="field-input">
+                @error('email')
+                    <p role="alert" class="field-error">{{ $message }}</p>
+                @enderror
+            </div>
+            <div>
+                <label for="password" class="field-label">{{ __('Password') }}</label>
+                <input id="password" type="password" name="password" required autocomplete="current-password" class="field-input">
+            </div>
+            <label class="flex items-center gap-2 text-sm text-slate-600">
+                <input type="checkbox" name="remember" value="1" class="h-4 w-4 rounded border-slate-300 text-indigo-600 focus:ring-indigo-500">
+                {{ __('Remember me') }}
+            </label>
+            <button type="submit" class="btn w-full">{{ __('Sign in') }}</button>
+        </form>
+    @endif
+</x-layouts.guest>

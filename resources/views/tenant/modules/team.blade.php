@@ -1,39 +1,37 @@
-<!DOCTYPE html>
-<html lang="{{ str_replace('_', '-', app()->getLocale()) }}">
-<head>
-    <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>{{ __('Team') }} - {{ $organization->name }}</title>
-</head>
-<body>
-    <header>
-        <h1>{{ __('Team') }}</h1>
-        <a href="{{ app(\App\Tenancy\TenantUrlGenerator::class)->to($organization) }}">{{ __('Dashboard') }}</a>
-    </header>
-
-    <main>
-        <table>
-            <thead>
+<x-layouts.app
+    :title="__('Team').' - '.$organization->name"
+    :heading="__('Team')"
+    :subheading="__('People in your organization and their roles.')"
+    :badge="$organization->name"
+    :back="app(\App\Tenancy\TenantUrlGenerator::class)->to($organization)"
+    :backLabel="__('Dashboard')"
+>
+    <div class="card overflow-hidden">
+        <table class="data-table">
+            <thead class="bg-slate-50">
                 <tr>
                     <th scope="col">{{ __('Name') }}</th>
                     <th scope="col">{{ __('Email') }}</th>
                     <th scope="col">{{ __('Roles') }}</th>
                 </tr>
             </thead>
-            <tbody>
+            <tbody class="divide-y divide-slate-100">
                 @forelse ($members as $member)
                     <tr>
-                        <td>{{ $member->name }}</td>
+                        <td class="font-medium text-slate-900">{{ $member->name }}</td>
                         <td>{{ $member->email }}</td>
-                        <td>{{ $member->roles->pluck('name')->join(', ') }}</td>
+                        <td>
+                            @foreach ($member->roles as $role)
+                                <span class="badge bg-indigo-50 text-indigo-700">{{ $role->name }}</span>
+                            @endforeach
+                        </td>
                     </tr>
                 @empty
                     <tr>
-                        <td colspan="3">{{ __('No team members are available.') }}</td>
+                        <td colspan="3" class="text-center text-slate-500">{{ __('No team members are available.') }}</td>
                     </tr>
                 @endforelse
             </tbody>
         </table>
-    </main>
-</body>
-</html>
+    </div>
+</x-layouts.app>

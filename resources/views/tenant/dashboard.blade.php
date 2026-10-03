@@ -1,30 +1,26 @@
-<!DOCTYPE html>
-<html lang="{{ str_replace('_', '-', app()->getLocale()) }}">
-<head>
-    <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>{{ __('Dashboard') }} - {{ $organization->name }}</title>
-</head>
-<body>
-    <header>
-        <h1>{{ $organization->name }}</h1>
-        <p>{{ __('Signed in as :name', ['name' => auth()->user()->name]) }}</p>
+<x-layouts.app
+    :title="__('Dashboard').' - '.$organization->name"
+    :heading="__('Welcome back, :name', ['name' => auth()->user()->name])"
+    :subheading="__('Your modules')"
+    :badge="$organization->name"
+>
+    <x-slot:actions>
+        <span class="hidden text-slate-500 sm:inline">{{ auth()->user()->email }}</span>
         <form method="POST" action="{{ $urls->to($organization, 'logout') }}">
             @csrf
-            <button type="submit">{{ __('Sign out') }}</button>
+            <button type="submit" class="btn-secondary">{{ __('Sign out') }}</button>
         </form>
-    </header>
+    </x-slot:actions>
 
-    <main>
-        <h2>{{ __('Your modules') }}</h2>
+    <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
         @forelse ($modules as $module)
-            <article>
-                <h3><a href="{{ $urls->to($organization, 'modules/'.$module->slug) }}">{{ $module->name }}</a></h3>
-                <p>{{ $module->description }}</p>
-            </article>
+            <a href="{{ $urls->to($organization, 'modules/'.$module->slug) }}" class="card block p-5 transition hover:border-indigo-300 hover:shadow-md">
+                <h2 class="font-semibold text-slate-900">{{ $module->name }}</h2>
+                <p class="mt-1 text-sm text-slate-500">{{ $module->description }}</p>
+                <span class="mt-4 inline-block text-sm font-medium text-indigo-600">{{ __('Open') }} &rarr;</span>
+            </a>
         @empty
-            <p>{{ __('No modules have been enabled for this organization yet.') }}</p>
+            <p class="card col-span-full p-6 text-center text-sm text-slate-500">{{ __('No modules have been enabled for this organization yet.') }}</p>
         @endforelse
-    </main>
-</body>
-</html>
+    </div>
+</x-layouts.app>
