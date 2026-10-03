@@ -50,11 +50,46 @@ class TenantAccessTest extends TestCase
 
         $this->get(route('tenant.login', ['organization' => $organization->slug]))
             ->assertOk()
-            ->assertSee('Organization SSO has not been configured.')
+            ->assertSee('type="password"', false)
             ->assertDontSee('Continue with organization SSO');
 
         $this->get(route('tenant.saml.login', ['organization' => $organization->slug]))
             ->assertNotFound();
+    }
+
+    public function test_password_login_works_only_while_sso_is_disabled(): void
+    {
+        $organization = $this->createOrganization('org-a', 'acme');
+        $this->createTenantUser($organization, 'member@acme.test');
+        $slug = ['organization' => $organization->slug];
+        $credentials = ['_token' => 'csrf-test-token', 'email' => 'member@acme.test', 'password' => 'a-long-tenant-password'];
+        $this->withSession(['_token' => 'csrf-test-token']);
+
+        $this->post(route('tenant.login.store', $slug), [...$credentials, 'password' => 'wrong'])
+            ->assertSessionHasErrors('email');
+        $this->assertGuest('web');
+
+        $this->post(route('tenant.login.store', $slug), $credentials)
+            ->assertRedirect();
+        $this->assertAuthenticated('web');
+
+        auth('web')->logout();
+        $this->withSession(['_token' => 'csrf-test-token']);
+
+        $organization->samlConnection()->create([
+            'idp_entity_id' => 'https://idp.example.test/metadata',
+            'sso_url' => 'https://idp.example.test/sso',
+            'x509_certificate' => 'certificate',
+            'email_attribute' => 'email',
+            'name_attribute' => 'name',
+            'enabled' => true,
+        ]);
+
+        $this->get(route('tenant.login', $slug))
+            ->assertSee('Continue with organization SSO')
+            ->assertDontSee('type="password"', false);
+        $this->post(route('tenant.login.store', $slug), $credentials)->assertNotFound();
+        $this->assertGuest('web');
     }
 
     public function test_dashboard_lists_only_enabled_modules_and_team_access_is_tenant_scoped(): void

@@ -42,6 +42,7 @@ Route::prefix($prefix)->middleware($middleware)->group(function () {
         ->name('tenant.dashboard');
 
     Route::get('/login', [LoginController::class, 'create'])->name('tenant.login');
+    Route::post('/login', [LoginController::class, 'store'])->name('tenant.login.store');
     Route::post('/logout', [LoginController::class, 'destroy'])
         ->middleware(App\Http\Middleware\AuthenticateTenantUser::class)
         ->name('tenant.logout');
