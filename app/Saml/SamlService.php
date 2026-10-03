@@ -31,6 +31,11 @@ class SamlService
         return $scheme.'://'.$host.$port.$prefix.'/'.ltrim($path, '/');
     }
 
+    public function entityId(Organization $organization): string
+    {
+        return 'urn:laravel-saas:'.$organization->slug;
+    }
+
     public function normalizeCertificate(string $certificate): string
     {
         return preg_replace(
@@ -46,7 +51,7 @@ class SamlService
             'strict' => true,
             'debug' => false,
             'sp' => [
-                'entityId' => $this->endpoint($organization, 'saml/metadata'),
+                'entityId' => $this->entityId($organization),
                 'assertionConsumerService' => [
                     'url' => $this->endpoint($organization, 'saml/acs'),
                     'binding' => Constants::BINDING_HTTP_POST,

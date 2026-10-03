@@ -11,6 +11,8 @@ for Stripe billing and requires PHP's `bcmath` extension, which is installed in
 the development container image. `Organization` is the tenancy package's tenant
 model. Superadmin accounts use a separate central-database authentication
 provider and do not share the tenant user table.
+The development compose stack includes Keycloak with an imported SAML realm;
+the realm client uses the tenant's stable `urn:laravel-saas:{slug}` entity ID.
 Tenant routes initialize the organization before Laravel resolves tenant models.
 Each organization may have one central SAML connection. IdP signing certificates
 are encrypted at rest; SAML assertions and responses must be signed and are

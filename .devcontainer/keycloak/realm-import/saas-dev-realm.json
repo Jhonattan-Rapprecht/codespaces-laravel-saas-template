@@ -1,0 +1,53 @@
+{
+  "realm": "saas-dev",
+  "enabled": true,
+  "sslRequired": "none",
+  "clients": [
+    {
+      "clientId": "urn:laravel-saas:demo",
+      "name": "Laravel SaaS Template - demo organization",
+      "enabled": true,
+      "protocol": "saml",
+      "baseUrl": "http://localhost:8000/t/demo",
+      "redirectUris": [
+        "http://localhost:8000/*"
+      ],
+      "attributes": {
+        "saml_assertion_consumer_url_post": "http://localhost:8000/t/demo/saml/acs",
+        "saml_idp_initiated_sso_url_name": "laravel-saas",
+        "saml_name_id_format": "email",
+        "saml.assertion.signature": "true",
+        "saml.server.signature": "true",
+        "saml.signature.algorithm": "RSA_SHA256",
+        "saml.force.post.binding": "true",
+        "saml.client.signature": "false",
+        "saml.encrypt": "false",
+        "saml.force.name.id.format": "true"
+      },
+      "protocolMappers": [
+        {
+          "name": "email",
+          "protocol": "saml",
+          "protocolMapper": "saml-user-property-mapper",
+          "consentRequired": false,
+          "config": {
+            "user.property": "email",
+            "attribute.name": "email",
+            "attribute.nameformat": "Basic"
+          }
+        },
+        {
+          "name": "name",
+          "protocol": "saml",
+          "protocolMapper": "saml-user-property-mapper",
+          "consentRequired": false,
+          "config": {
+            "user.property": "firstName",
+            "attribute.name": "name",
+            "attribute.nameformat": "Basic"
+          }
+        }
+      ]
+    }
+  ]
+}

@@ -17,7 +17,7 @@ class SamlConnectionController extends Controller
         return view('superadmin.organizations.saml', [
             'organization' => $organization,
             'connection' => $organization->samlConnection,
-            'spEntityId' => $saml->endpoint($organization, 'saml/metadata'),
+            'spEntityId' => $saml->entityId($organization),
             'acsUrl' => $saml->endpoint($organization, 'saml/acs'),
         ]);
     }

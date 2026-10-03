@@ -8,7 +8,8 @@
     "mysql",
     "redis",
     "mailpit",
-    "phpmyadmin"
+    "phpmyadmin",
+    "keycloak"
   ],
   "shutdownAction": "stopCompose",
   "remoteUser": "vscode",
@@ -29,7 +30,8 @@
     3306,
     8080,
     8025,
-    6379
+    6379,
+    8081
   ],
   "portsAttributes": {
     "8000": {
@@ -41,6 +43,10 @@
     },
     "8025": {
       "label": "Mailpit"
+    },
+    "8081": {
+      "label": "Keycloak",
+      "onAutoForward": "notify"
     },
     "5173": {
       "label": "Vite"

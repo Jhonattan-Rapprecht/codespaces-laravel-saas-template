@@ -103,6 +103,7 @@ class SamlConfigurationTest extends TestCase
         $this->assertTrue($security['wantAssertionsSigned']);
         $this->assertTrue($security['destinationStrictlyMatches']);
         $this->assertTrue($security['rejectUnsolicitedResponsesWithInResponseTo']);
+        $this->assertSame('urn:laravel-saas:example', $auth->getSettings()->getSPData()['entityId']);
         $this->assertStringContainsString('/t/example/saml/acs', $metadata);
     }
 
