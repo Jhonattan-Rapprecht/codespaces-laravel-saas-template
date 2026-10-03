@@ -9,7 +9,8 @@ databases hold users, authorization roles, layouts, and tenant module data.
 framework constraint during installation. Laravel Cashier v16.8 is installed
 for Stripe billing and requires PHP's `bcmath` extension, which is installed in
 the development container image. `Organization` is the tenancy package's tenant
-model.
+model. Superadmin accounts use a separate central-database authentication
+provider and do not share the tenant user table.
 Tenant routes initialize the organization before Laravel resolves tenant models.
 
 The central database connection is the normal `DB_*` connection. Redis is
