@@ -1,62 +1,116 @@
-<p align="center"><a href="https://laravel.com" target="_blank"><img src="https://raw.githubusercontent.com/laravel/art/master/logo-lockup/5%20SVG/2%20CMYK/1%20Full%20Color/laravel-logolockup-cmyk-red.svg" width="400" alt="Laravel Logo"></a></p>
+# Laravel SaaS Template
 
-<p align="center">
-<a href="https://github.com/laravel/framework/actions"><img src="https://github.com/laravel/framework/workflows/tests/badge.svg" alt="Build Status"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/dt/laravel/framework" alt="Total Downloads"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/v/laravel/framework" alt="Latest Stable Version"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/l/laravel/framework" alt="License"></a>
-</p>
+A multi-tenant SaaS starter built on **Laravel 12** and a ready-to-use
+**GitHub Codespaces / devcontainer** environment. Every customer organization
+gets its own database, its own sign-in method (SAML SSO or password), its own
+users and roles, and only the modules the platform operator enables for it.
 
-## About Laravel
+## Features
 
-Project documentation is in [`/documentation`](documentation). Every change set
-must include a dated development changelog in `documentation/development/`.
+- **Database-per-organization multi-tenancy** with
+  [stancl/tenancy](https://tenancyforlaravel.com). Tenant URLs are path based
+  (`/t/{slug}`) by default; subdomain resolution is available through
+  `TENANCY_RESOLUTION=subdomain`.
+- **Superadmin back office** (`/admin`) with its own guard and accounts: list
+  organizations, suspend or reactivate them, enable modules per organization,
+  and configure SAML.
+- **Per-organization SAML 2.0 SSO** using
+  [onelogin/php-saml](https://github.com/SAML-Toolkits/php-saml). Responses and
+  assertions must be signed, destinations are matched strictly, and requests are
+  single use. Certificates are encrypted at rest.
+- **Password sign-in fallback**: when an organization's SSO is disabled or not
+  configured, its login page shows an email and password form (rate limited).
+- **Tenant roles and user management**: *Tenant administrator* and *Member*
+  roles. Administrators create users, change roles, and set passwords; the last
+  administrator can never be demoted.
+- **Module catalog**: the superadmin decides which modules (Team, Settings) each
+  organization can use; the tenant dashboard lists only enabled ones.
+- **Local identity provider**: a Keycloak container with a pre-configured SAML
+  realm for developing and testing SSO.
+- **Tailwind CSS 4 UI** with shared Blade layouts, plus mailpit, phpMyAdmin,
+  Redis and MySQL in the devcontainer.
+- **Cashier** (Stripe billing) is installed and ready to be wired up.
 
-Laravel is a web application framework with expressive, elegant syntax. We believe development must be an enjoyable and creative experience to be truly fulfilling. Laravel takes the pain out of development by easing common tasks used in many web projects, such as:
+## Screenshots
 
-- [Simple, fast routing engine](https://laravel.com/docs/routing).
-- [Powerful dependency injection container](https://laravel.com/docs/container).
-- Multiple back-ends for [session](https://laravel.com/docs/session) and [cache](https://laravel.com/docs/cache) storage.
-- Expressive, intuitive [database ORM](https://laravel.com/docs/eloquent).
-- Database agnostic [schema migrations](https://laravel.com/docs/migrations).
-- [Robust background job processing](https://laravel.com/docs/queues).
-- [Real-time event broadcasting](https://laravel.com/docs/broadcasting).
+### Superadmin back office
 
-Laravel is accessible, powerful, and provides tools required for large, robust applications.
+| Sign in | Organizations |
+|---|---|
+| ![Superadmin sign in](documentation/screenshots/superadmin-login.png) | ![Organizations](documentation/screenshots/superadmin-organizations.png) |
 
-## Learning Laravel
+![Module configuration](documentation/screenshots/superadmin-modules.png)
 
-Laravel has the most extensive and thorough [documentation](https://laravel.com/docs) and video tutorial library of all modern web application frameworks, making it a breeze to get started with the framework. You can also check out [Laravel Learn](https://laravel.com/learn), where you will be guided through building a modern Laravel application.
+### Organization (tenant) area
 
-If you don't feel like reading, [Laracasts](https://laracasts.com) can help. Laracasts contains thousands of video tutorials on a range of topics including Laravel, modern PHP, unit testing, and JavaScript. Boost your skills by digging into our comprehensive video library.
+| Sign in | Dashboard |
+|---|---|
+| ![Tenant sign in](documentation/screenshots/tenant-login.png) | ![Tenant dashboard](documentation/screenshots/tenant-dashboard.png) |
 
-## Laravel Sponsors
+![Team management](documentation/screenshots/tenant-team.png)
 
-We would like to extend our thanks to the following sponsors for funding Laravel development. If you are interested in becoming a sponsor, please visit the [Laravel Partners program](https://partners.laravel.com).
+| Settings | Landing page |
+|---|---|
+| ![Settings](documentation/screenshots/tenant-settings.png) | ![Landing page](documentation/screenshots/landing.png) |
 
-### Premium Partners
+## Getting started
 
-- **[Vehikl](https://vehikl.com)**
-- **[Tighten Co.](https://tighten.co)**
-- **[Kirschbaum Development Group](https://kirschbaumdevelopment.com)**
-- **[64 Robots](https://64robots.com)**
-- **[Curotec](https://www.curotec.com/services/technologies/laravel)**
-- **[DevSquad](https://devsquad.com/hire-laravel-developers)**
-- **[Redberry](https://redberry.international/laravel-development)**
-- **[Active Logic](https://activelogic.com)**
+Open the repository in **GitHub Codespaces** (or a local devcontainer). The
+container installs dependencies, creates `.env`, and runs the central
+migrations. Then:
 
-## Contributing
+```sh
+php artisan db:seed                 # module catalog + demo organization
+php artisan superadmin:create       # first platform administrator
+npm run build                       # or `npm run dev` for Vite
+php artisan serve --host=0.0.0.0    # http://localhost:8000
+```
 
-Thank you for considering contributing to the Laravel framework! The contribution guide can be found in the [Laravel documentation](https://laravel.com/docs/contributions).
+- **Back office:** `/admin/login`
+- **Demo organization:** `/t/demo` (seeded tenant administrator
+  `admin@demo.test`, password from `DEMO_ADMIN_PASSWORD`, default `password`;
+  local development only)
+- After pulling changes, run `php artisan migrate` and
+  `php artisan tenants:migrate`, and rebuild assets with `npm run build`.
 
-## Code of Conduct
+### Testing SSO with Keycloak
 
-In order to ensure that the Laravel community is welcoming to all, please review and abide by the [Code of Conduct](https://laravel.com/docs/contributions#code-of-conduct).
+The devcontainer starts Keycloak on port `8081` with a `saas-dev` realm and a
+demo user. Connect the demo organization with:
 
-## Security Vulnerabilities
+```sh
+php artisan saml:import-metadata demo \
+  http://keycloak:8080/realms/saas-dev/protocol/saml/descriptor --enable
+```
 
-If you discover a security vulnerability within Laravel, please send an e-mail to Taylor Otwell via [taylor@laravel.com](mailto:taylor@laravel.com). All security vulnerabilities will be promptly addressed.
+See [Keycloak development](documentation/user/keycloak-development.md) for
+credentials, Codespaces URLs, and resetting the realm. These credentials are for
+local development only.
+
+### Tests
+
+```sh
+php artisan test
+```
+
+## Documentation
+
+| Topic | Location |
+|---|---|
+| Architecture and tenancy | [`documentation/technical`](documentation/technical) |
+| Superadmin and tenant guides | [`documentation/user`](documentation/user) |
+| Dated change logs and handoff notes | [`documentation/development`](documentation/development) |
+
+Every change set must include a dated changelog in `documentation/development/`.
+
+## Status and roadmap
+
+- Keycloak SSO is configured in the repository but has not yet been verified end
+  to end (it requires recreating the Keycloak volume).
+- Not yet built: user invitations by email, password reset, billing flows, and
+  additional modules.
 
 ## License
 
-The Laravel framework is open-sourced software licensed under the [MIT license](https://opensource.org/licenses/MIT).
+Released under the [MIT license](https://opensource.org/licenses/MIT). Built on
+the [Laravel](https://laravel.com) framework.
