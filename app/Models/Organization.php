@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use App\Tenancy\OrganizationDatabaseConfig;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Stancl\Tenancy\Contracts\TenantWithDatabase;
 use Stancl\Tenancy\Database\Concerns\HasDatabase;
@@ -22,6 +23,11 @@ class Organization extends Tenant implements TenantWithDatabase
         'database_password' => 'encrypted',
         'deleted_at' => 'datetime',
     ];
+
+    public function samlConnection(): HasOne
+    {
+        return $this->hasOne(OrganizationSamlConnection::class);
+    }
 
     public function database(): OrganizationDatabaseConfig
     {

@@ -10,6 +10,7 @@
         "laravel/cashier": "^16.0",
         "laravel/framework": "^12.0",
         "laravel/tinker": "^2.10.1",
+        "onelogin/php-saml": "^4.3.2",
         "stancl/tenancy": "^3.9"
     },
     "require-dev": {

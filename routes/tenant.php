@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+use App\Http\Controllers\Tenant\SamlController;
 use App\Http\Middleware\InitializeOrganizationTenancy;
 use Illuminate\Support\Facades\Route;
 use Stancl\Tenancy\Middleware\PreventAccessFromCentralDomains;
@@ -32,5 +33,9 @@ if (! $pathResolution) {
 Route::prefix($prefix)->middleware($middleware)->group(function () {
     Route::get('/', function () {
         return 'This is your multi-tenant application. The id of the current tenant is '.tenant('id');
-    });
+    })->name('tenant.home');
+
+    Route::get('/saml/login', [SamlController::class, 'login'])->name('tenant.saml.login');
+    Route::post('/saml/acs', [SamlController::class, 'assertionConsumer'])->name('tenant.saml.acs');
+    Route::get('/saml/metadata', [SamlController::class, 'metadata'])->name('tenant.saml.metadata');
 });

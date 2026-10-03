@@ -38,6 +38,7 @@
                         <td>{{ $organization->domains_count }}</td>
                         <td>{{ ucfirst($organization->status) }}</td>
                         <td>
+                            <a href="{{ route('admin.organizations.saml.edit', $organization) }}">{{ __('Configure SAML') }}</a>
                             <form method="POST" action="{{ route('admin.organizations.status', $organization) }}">
                                 @csrf
                                 @method('PATCH')

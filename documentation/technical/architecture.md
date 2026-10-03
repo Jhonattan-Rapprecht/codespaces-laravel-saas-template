@@ -12,6 +12,10 @@ the development container image. `Organization` is the tenancy package's tenant
 model. Superadmin accounts use a separate central-database authentication
 provider and do not share the tenant user table.
 Tenant routes initialize the organization before Laravel resolves tenant models.
+Each organization may have one central SAML connection. IdP signing certificates
+are encrypted at rest; SAML assertions and responses must be signed and are
+validated against the service provider's destination and a one-time,
+organization-bound authentication request.
 
 The central database connection is the normal `DB_*` connection. Redis is
 configured through Laravel's normal `REDIS_*` settings and tenant-aware cache
