@@ -2,10 +2,14 @@
 
 declare(strict_types=1);
 
+use App\Http\Controllers\Tenant\DashboardController;
+use App\Http\Controllers\Tenant\LoginController;
+use App\Http\Controllers\Tenant\ModuleController;
 use App\Http\Controllers\Tenant\SamlController;
 use App\Http\Middleware\InitializeOrganizationTenancy;
 use Illuminate\Support\Facades\Route;
 use Stancl\Tenancy\Middleware\PreventAccessFromCentralDomains;
+use Stancl\Tenancy\Middleware\ScopeSessions;
 
 /*
 |--------------------------------------------------------------------------
@@ -30,10 +34,20 @@ if (! $pathResolution) {
     $middleware[] = PreventAccessFromCentralDomains::class;
 }
 
+$middleware[] = ScopeSessions::class;
+
 Route::prefix($prefix)->middleware($middleware)->group(function () {
-    Route::get('/', function () {
-        return 'This is your multi-tenant application. The id of the current tenant is '.tenant('id');
-    })->name('tenant.home');
+    Route::get('/', DashboardController::class)
+        ->middleware(App\Http\Middleware\AuthenticateTenantUser::class)
+        ->name('tenant.dashboard');
+
+    Route::get('/login', [LoginController::class, 'create'])->name('tenant.login');
+    Route::post('/logout', [LoginController::class, 'destroy'])
+        ->middleware(App\Http\Middleware\AuthenticateTenantUser::class)
+        ->name('tenant.logout');
+    Route::get('/modules/{slug}', [ModuleController::class, 'show'])
+        ->middleware(App\Http\Middleware\AuthenticateTenantUser::class)
+        ->name('tenant.modules.show');
 
     Route::get('/saml/login', [SamlController::class, 'login'])->name('tenant.saml.login');
     Route::post('/saml/acs', [SamlController::class, 'assertionConsumer'])->name('tenant.saml.acs');

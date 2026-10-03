@@ -4,11 +4,14 @@ namespace App\Saml;
 
 use App\Models\Organization;
 use App\Models\OrganizationSamlConnection;
+use App\Tenancy\TenantUrlGenerator;
 use OneLogin\Saml2\Auth;
 use OneLogin\Saml2\Constants;
 
 class SamlService
 {
+    public function __construct(private TenantUrlGenerator $urls) {}
+
     public function auth(Organization $organization, OrganizationSamlConnection $connection): Auth
     {
         return new Auth($this->settings($organization, $connection));
@@ -16,19 +19,7 @@ class SamlService
 
     public function endpoint(Organization $organization, string $path): string
     {
-        $appUrl = parse_url((string) config('app.url'));
-        $scheme = $appUrl['scheme'] ?? 'https';
-        $host = $appUrl['host'] ?? 'localhost';
-        $port = isset($appUrl['port']) ? ':'.$appUrl['port'] : '';
-
-        if (config('tenancy.resolution') === 'subdomain') {
-            $host = $organization->slug.'.'.$host;
-            $prefix = '';
-        } else {
-            $prefix = '/t/'.rawurlencode($organization->slug);
-        }
-
-        return $scheme.'://'.$host.$port.$prefix.'/'.ltrim($path, '/');
+        return $this->urls->to($organization, $path);
     }
 
     public function entityId(Organization $organization): string

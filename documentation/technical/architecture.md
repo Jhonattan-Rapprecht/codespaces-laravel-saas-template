@@ -13,6 +13,9 @@ model. Superadmin accounts use a separate central-database authentication
 provider and do not share the tenant user table.
 The development compose stack includes Keycloak with an imported SAML realm;
 the realm client uses the tenant's stable `urn:laravel-saas:{slug}` entity ID.
+Tenant sessions are scoped to one organization. The central module catalog
+defines available modules, while `organization_modules` controls which modules
+each tenant can access; module data and users remain in the tenant database.
 Tenant routes initialize the organization before Laravel resolves tenant models.
 Each organization may have one central SAML connection. IdP signing certificates
 are encrypted at rest; SAML assertions and responses must be signed and are

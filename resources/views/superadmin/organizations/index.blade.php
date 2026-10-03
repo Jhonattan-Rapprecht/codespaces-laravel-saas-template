@@ -39,6 +39,7 @@
                         <td>{{ ucfirst($organization->status) }}</td>
                         <td>
                             <a href="{{ route('admin.organizations.saml.edit', $organization) }}">{{ __('Configure SAML') }}</a>
+                            <a href="{{ route('admin.organizations.modules.edit', $organization) }}">{{ __('Configure modules') }}</a>
                             <form method="POST" action="{{ route('admin.organizations.status', $organization) }}">
                                 @csrf
                                 @method('PATCH')

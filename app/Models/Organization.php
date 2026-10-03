@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use App\Tenancy\OrganizationDatabaseConfig;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Stancl\Tenancy\Contracts\TenantWithDatabase;
@@ -27,6 +28,13 @@ class Organization extends Tenant implements TenantWithDatabase
     public function samlConnection(): HasOne
     {
         return $this->hasOne(OrganizationSamlConnection::class);
+    }
+
+    public function modules(): BelongsToMany
+    {
+        return $this->belongsToMany(Module::class, 'organization_modules')
+            ->withPivot('enabled')
+            ->withTimestamps();
     }
 
     public function database(): OrganizationDatabaseConfig

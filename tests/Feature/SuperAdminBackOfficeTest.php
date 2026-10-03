@@ -2,6 +2,7 @@
 
 namespace Tests\Feature;
 
+use App\Models\Module;
 use App\Models\SuperAdmin;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
@@ -120,5 +121,76 @@ class SuperAdminBackOfficeTest extends TestCase
             'id' => 'org-1',
             'status' => 'active',
         ]);
+    }
+
+    public function test_superadmin_can_enable_modules_for_an_organization(): void
+    {
+        $admin = SuperAdmin::query()->create([
+            'name' => 'Platform Admin',
+            'email' => 'platform@example.test',
+            'password' => 'a-long-test-password',
+        ]);
+
+        $module = Module::query()->create([
+            'slug' => 'team',
+            'name' => 'Team',
+            'description' => 'View tenant users and their roles.',
+            'enabled' => true,
+        ]);
+
+        DB::table('organizations')->insert([
+            'id' => 'org-1',
+            'name' => 'Example Organization',
+            'slug' => 'example',
+            'database_host' => '127.0.0.1',
+            'database_name' => 'tenant_example',
+            'status' => 'active',
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+
+        $this->actingAs($admin, 'superadmin')
+            ->withSession(['_token' => 'csrf-test-token'])
+            ->put(route('admin.organizations.modules.update', 'org-1'), [
+                '_token' => 'csrf-test-token',
+                'modules' => ['team'],
+            ])
+            ->assertRedirect(route('admin.organizations.modules.edit', 'org-1'));
+
+        $this->assertDatabaseHas('organization_modules', [
+            'organization_id' => 'org-1',
+            'module_id' => $module->id,
+            'enabled' => true,
+        ]);
+    }
+
+    public function test_superadmin_cannot_enable_an_unknown_module(): void
+    {
+        $admin = SuperAdmin::query()->create([
+            'name' => 'Platform Admin',
+            'email' => 'platform@example.test',
+            'password' => 'a-long-test-password',
+        ]);
+
+        DB::table('organizations')->insert([
+            'id' => 'org-1',
+            'name' => 'Example Organization',
+            'slug' => 'example',
+            'database_host' => '127.0.0.1',
+            'database_name' => 'tenant_example',
+            'status' => 'active',
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+
+        $this->actingAs($admin, 'superadmin')
+            ->withSession(['_token' => 'csrf-test-token'])
+            ->put(route('admin.organizations.modules.update', 'org-1'), [
+                '_token' => 'csrf-test-token',
+                'modules' => ['not-a-module'],
+            ])
+            ->assertSessionHasErrors('modules');
+
+        $this->assertDatabaseCount('organization_modules', 0);
     }
 }
