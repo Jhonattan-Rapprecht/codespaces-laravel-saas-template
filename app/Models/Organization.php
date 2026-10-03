@@ -25,6 +25,24 @@ class Organization extends Tenant implements TenantWithDatabase
         'deleted_at' => 'datetime',
     ];
 
+    public static function getCustomColumns(): array
+    {
+        return [
+            'id',
+            'name',
+            'slug',
+            'database_host',
+            'database_name',
+            'database_username',
+            'database_password',
+            'status',
+            'data',
+            'created_at',
+            'updated_at',
+            'deleted_at',
+        ];
+    }
+
     public function samlConnection(): HasOne
     {
         return $this->hasOne(OrganizationSamlConnection::class);
