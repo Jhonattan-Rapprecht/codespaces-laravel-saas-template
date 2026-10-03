@@ -28,6 +28,8 @@ class TenantAccessTest extends TestCase
             tenancy()->end();
         }
 
+        parent::tearDown();
+
         foreach ($this->tenantDatabases as $tenantDatabase) {
             if (is_file($tenantDatabase['file'])) {
                 unlink($tenantDatabase['file']);
@@ -37,8 +39,6 @@ class TenantAccessTest extends TestCase
                 rmdir($tenantDatabase['directory']);
             }
         }
-
-        parent::tearDown();
     }
 
     public function test_dashboard_requires_sign_in_and_login_is_saml_only(): void
