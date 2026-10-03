@@ -24,9 +24,20 @@ mkdir -p "$import_dir"
 
 # The realm is only imported when it does not exist yet, so the SAML client's
 # ACS URL is rendered from the application's public URL on first start.
-sed \
-    -e "s|__APP_URL__|${APP_PUBLIC_URL%/}|g" \
-    -e "s|__DEV_USER_PASSWORD__|${KEYCLOAK_DEV_USER_PASSWORD:-Demo-Sso-Pass-1}|g" \
-    /opt/keycloak/realm-template/saas-dev-realm.json > "$import_dir/saas-dev-realm.json"
+# The Keycloak image is minimal and has no sed, so render with POSIX shell only.
+replace_all() {
+    rest=$1
+    out=
+    while [ "${rest#*"$2"}" != "$rest" ]; do
+        out=$out${rest%%"$2"*}$3
+        rest=${rest#*"$2"}
+    done
+    printf '%s' "$out$rest"
+}
+
+realm_json=$(cat /opt/keycloak/realm-template/saas-dev-realm.json)
+realm_json=$(replace_all "$realm_json" __APP_URL__ "${APP_PUBLIC_URL%/}")
+realm_json=$(replace_all "$realm_json" __DEV_USER_PASSWORD__ "${KEYCLOAK_DEV_USER_PASSWORD:-Demo-Sso-Pass-1}")
+printf '%s\n' "$realm_json" > "$import_dir/saas-dev-realm.json"
 
 exec /opt/keycloak/bin/kc.sh start-dev --import-realm
